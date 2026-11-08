@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f4f5f0" />
+    <meta name="description" content="A personal workout tracker that saves your training on this device." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Form — Personal training log</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#today" aria-label="Form home"><span class="brand-mark">F</span><span>form<span class="brand-dot">.</span></span></a>
+        <nav class="top-nav" aria-label="Main navigation">
+          <button data-page="today" class="nav-item active">Today</button>
+          <button data-page="routines" class="nav-item">Routines</button>
+          <button data-page="history" class="nav-item">History</button>
+          <button data-page="exercises" class="nav-item">Exercises</button>
+        </nav>
+        <div class="topbar-right">
+          <span class="local-badge"><i></i> On this device</span>
+          <button class="backup-button" data-action="backup-menu" aria-label="Backup and restore data" title="Backup and restore">↧</button>
+        </div>
+      </header>
+      <main id="app" class="main-content" aria-live="polite"></main>
+      <nav class="bottom-nav" aria-label="Main navigation">
+        <button data-page="today" class="nav-item active"><span class="nav-icon">⌂</span><span>Today</span></button>
+        <button data-page="routines" class="nav-item"><span class="nav-icon">▤</span><span>Routines</span></button>
+        <button data-page="history" class="nav-item"><span class="nav-icon">◷</span><span>History</span></button>
+        <button data-page="exercises" class="nav-item"><span class="nav-icon">＋</span><span>Exercises</span></button>
+      </nav>
+    </div>
+    <div id="modal-root"></div>
+    <input id="restore-file" type="file" accept="application/json,.json" hidden />
+    <script src="app.js" defer></script>
+  </body>
+</html>

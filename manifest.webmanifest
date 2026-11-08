@@ -1,0 +1,10 @@
+{
+  "name": "Form — Workout Log",
+  "short_name": "Form",
+  "description": "A personal workout tracker that saves routines and training on your device.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f0",
+  "theme_color": "#f4f5f0",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
