@@ -18,6 +18,7 @@ Workout app/
 ## What it can do
 
 - Create and edit as many routines as you need; add, reorder, and remove exercises.
+- Routine edits save as a draft while you type and reopen if the app is closed or reloaded before saving.
 - Set planned sets, rest time, exercise notes, and a video link for each movement.
 - Browse a starter exercise catalog or add custom exercises.
 - Start from a routine or start an empty workout.
@@ -43,4 +44,4 @@ Host the folder at an HTTPS address, open the address in Chrome on Android, then
 
 The app stores data using the `form-workout-data-v2` local-storage key and migrates the earlier v1 data when it opens. Browser storage is tied to the site address and device; it does not sync between your computer and phone. Clearing the browser's site data can erase the log, so use **↧ → Download backup** regularly. Restore replaces the current browser's app data with the selected backup.
 
-Change screen behavior and data fields in `app.js`; change colors and layout in `styles.css`. The exercise catalog is the `DEFAULT_LIBRARY` list near the top of `app.js`. If you change files cached by the service worker, increment `CACHE_NAME` in `sw.js` so the browser installs the new version.
+Change screen behavior and data fields in `app.js`; change colors and layout in `styles.css`. The exercise catalog is the `DEFAULT_LIBRARY` list near the top of `app.js`. When publishing changes, upload the changed files to the same GitHub repository. If you change files cached by the service worker, increment `CACHE_NAME` in `sw.js` so the browser installs the new version.

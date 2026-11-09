@@ -1,5 +1,6 @@
 const STORE_KEY = 'form-workout-data-v2';
 const OLD_KEY = 'form-workout-data-v1';
+const ROUTINE_DRAFT_KEY = 'form-routine-draft-v1';
 const todayISO = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const uid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const DEFAULT_LIBRARY = [
@@ -16,7 +17,7 @@ let currentPage='today';
 let historyMonth='all';
 let progressExercise='';
 let pickerTarget='workout';
-let routineDraft=null;
+let routineDraft=loadRoutineDraft();
 let workoutClock=null;
 
 function loadData(){
@@ -39,6 +40,9 @@ function normalizeData(raw){
 }
 function persistData(value=data){localStorage.setItem(STORE_KEY,JSON.stringify(value));}
 function persist(){persistData(data);}
+function loadRoutineDraft(){try{const raw=localStorage.getItem(ROUTINE_DRAFT_KEY);return raw?JSON.parse(raw):null;}catch{return null;}}
+function saveRoutineDraft(draft=readRoutineDraft()){if(!draft)return;routineDraft=draft;try{localStorage.setItem(ROUTINE_DRAFT_KEY,JSON.stringify(draft));}catch(error){console.warn('Could not save routine draft',error);}}
+function clearRoutineDraft(){routineDraft=null;try{localStorage.removeItem(ROUTINE_DRAFT_KEY);}catch{}}
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function safeUrl(raw){try{const u=new URL(raw);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}}
 function formatDate(value,opts={weekday:'short',month:'short',day:'numeric',year:'numeric'}){if(!value)return '';return new Date(`${value}T12:00:00`).toLocaleDateString(undefined,opts);}
@@ -139,6 +143,7 @@ function notify(msg){document.querySelector('.notice')?.remove();const n=documen
 document.addEventListener('input',event=>{
   const setField=event.target.closest('[data-set-field]');if(setField){const s=data.activeSession,e=s?.exercises[Number(setField.dataset.exercise)],set=e?.sets[Number(setField.dataset.set)];if(set){set[setField.dataset.setField]=setField.value;persist();const volume=document.querySelector('[data-live-volume]');if(volume)volume.textContent=Math.round(workoutVolume(s)).toLocaleString();}return;}
   const sessionField=event.target.closest('[data-session-field]');if(sessionField){data.activeSession[sessionField.dataset.sessionField]=sessionField.value;persist();return;}
+  if(event.target.closest('form[data-form="routine"]')){saveRoutineDraft();return;}
   if(event.target.id==='picker-search'){const q=event.target.value.toLowerCase();document.querySelectorAll('.picker-item').forEach(item=>item.hidden=!item.textContent.toLowerCase().includes(q));return;}
   if(event.target.id==='exercise-search'||event.target.id==='exercise-category'){filterExerciseLibrary();}
 });
@@ -156,7 +161,7 @@ function exportBackup(){const payload={...data,exportedAt:new Date().toISOString
 document.addEventListener('click',event=>{
   const nav=event.target.closest('[data-page]');if(nav){currentPage=nav.dataset.page;render();window.scrollTo(0,0);return;}
   const start=event.target.closest('[data-start]');if(start){startWorkout(start.dataset.start);return;}
-  const edit=event.target.closest('[data-edit-routine]');if(edit){openRoutineEditor(data.routines.find(r=>r.id===edit.dataset.editRoutine));return;}
+  const edit=event.target.closest('[data-edit-routine]');if(edit){clearRoutineDraft();openRoutineEditor(data.routines.find(r=>r.id===edit.dataset.editRoutine));return;}
   const duplicate=event.target.closest('[data-duplicate-routine]');if(duplicate){const r=data.routines.find(x=>x.id===duplicate.dataset.duplicateRoutine);if(r){const copy=JSON.parse(JSON.stringify(r));copy.id=uid();copy.name=`${r.name} copy`;copy.createdAt=Date.now();copy.exercises=copy.exercises.map(e=>({...e,id:uid()}));data.routines.push(copy);persist();render();notify('Routine duplicated.');}return;}
   const delRoutine=event.target.closest('[data-delete-routine]');if(delRoutine){const r=data.routines.find(x=>x.id===delRoutine.dataset.deleteRoutine);if(r&&confirm(`Delete “${r.name}”? Completed workout history will remain.`)){data.routines=data.routines.filter(x=>x.id!==r.id);persist();render();notify('Routine deleted.');}return;}
   const view=event.target.closest('[data-view-workout]');if(view){showWorkoutDetails(view.dataset.viewWorkout);return;}
@@ -165,14 +170,14 @@ document.addEventListener('click',event=>{
   const deleteWeight=event.target.closest('[data-delete-weight]');if(deleteWeight){data.weighIns=data.weighIns.filter(w=>w.id!==deleteWeight.dataset.deleteWeight);persist();render();return;}
   const deleteExercise=event.target.closest('[data-delete-exercise]');if(deleteExercise){data.customExercises=data.customExercises.filter(x=>x.id!==deleteExercise.dataset.deleteExercise);persist();render();return;}
   const pick=event.target.closest('[data-pick-exercise]');if(pick){const ex=allExercises().find(x=>x.id===pick.dataset.pickExercise);if(!ex)return;if(pickerTarget==='workout'){addExerciseToSession(ex);}else if(pickerTarget==='routine'){const draft=readRoutineDraft();draft.exercises=draft.exercises.filter(item=>item.name?.trim());draft.exercises.push({name:ex.name,sets:3,restSeconds:data.settings.defaultRestSeconds,tutorialUrl:'',note:''});openRoutineEditor(draft);}return;}
-  const close=event.target.closest('[data-close]');if(close){closeModal();return;}
+  const close=event.target.closest('[data-close]');if(close){if(close.closest('.modal')?.querySelector('form[data-form="routine"]'))clearRoutineDraft();else if(pickerTarget==='routine'&&routineDraft){openRoutineEditor(routineDraft);return;}closeModal();return;}
   if(event.target.matches('[data-backdrop]')){closeModal();return;}
   const action=event.target.closest('[data-action]')?.dataset.action;
-  if(action==='new-routine'){openRoutineEditor();return;}
+  if(action==='new-routine'){clearRoutineDraft();openRoutineEditor();return;}
   if(action==='resume'){currentPage='workout';render();return;}
   if(action==='start-empty'){startWorkout();return;}
-  if(action==='add-routine-exercise'){document.querySelector('#routine-exercise-list')?.insertAdjacentHTML('beforeend',setEditorRow({sets:3,restSeconds:data.settings.defaultRestSeconds}));return;}
-  if(action==='pick-routine-exercise'){routineDraft=readRoutineDraft();showExercisePicker('routine');return;}
+  if(action==='add-routine-exercise'){document.querySelector('#routine-exercise-list')?.insertAdjacentHTML('beforeend',setEditorRow({sets:3,restSeconds:data.settings.defaultRestSeconds}));saveRoutineDraft();return;}
+  if(action==='pick-routine-exercise'){saveRoutineDraft(readRoutineDraft());showExercisePicker('routine');return;}
   if(action==='add-workout-exercise'){showExercisePicker('workout');return;}
   if(action==='create-exercise'){if(currentPage==='exercises'&&!document.querySelector('#picker-search'))pickerTarget='library';createCustomExercise();return;}
   if(action==='backup-menu'){openBackupModal();return;}
@@ -209,7 +214,7 @@ document.addEventListener('submit',event=>{
     if(!exercises.length){notify('Add at least one exercise.');return;}
     const rid=form.dataset.id,old=data.routines.find(r=>r.id===rid),routine={id:rid||uid(),name:String(fd.get('routineName')).trim(),description:String(fd.get('routineDescription')||'').trim(),exercises,createdAt:old?.createdAt||Date.now(),updatedAt:Date.now()};
     if(rid)data.routines=data.routines.map(r=>r.id===rid?routine:r);else data.routines.push(routine);
-    persist();closeModal();routineDraft=null;render();notify(rid?'Routine updated.':'Routine saved.');
+    persist();closeModal();clearRoutineDraft();render();notify(rid?'Routine updated.':'Routine saved.');
   }
 });
 
@@ -221,4 +226,7 @@ document.querySelector('#restore-file').addEventListener('change',async event=>{
 });
 
 render();
+if(routineDraft)openRoutineEditor(routineDraft);
 if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveRoutineDraft();});
+window.addEventListener('pagehide',()=>saveRoutineDraft());
